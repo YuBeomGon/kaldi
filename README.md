@@ -65,3 +65,4 @@ Platform specific notes
   OpenBLAS.
 - See [this blog post](http://jcsilva.github.io/2017/03/18/compile-kaldi-android/)
   for details.
+# kaldi
