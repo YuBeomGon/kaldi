@@ -28,8 +28,6 @@
 #include <string>
 #include "online2/online2-websockets.h"
 
-kaldi::ConstArpaLm const_arpa;
-
 kaldi_static_data kaldi_online_decoder::init = {NULL,};
 
 namespace kaldi {
@@ -170,14 +168,6 @@ void kaldi_online_decoder::decoder_decode(std::vector<short int> &pcm){
             sess->decoder->GetLattice(true, &lat);
             std::string msg = kaldi::LatticeToString(lat, *init.word_syms);
 
-            if (init.IsRescore == true){
-                KALDI_VLOG(1) << "Before LM rescoring, sending message: " << msg;
-                kaldi::CompactLattice newlat;
-                newlat = lat_rescore(lat);
-                std::string msg = kaldi::LatticeToString(newlat, *init.new_word_syms);
-                KALDI_VLOG(1) << "After LM rescoring, sending message: " << msg;
-            }
-
             // get time-span between endpoints,
             if (init.produce_time) {
                 int32 t_beg = sess->frame_offset - sess->decoder->NumFramesDecoded();
@@ -290,7 +280,6 @@ int kaldi_online_decoder::kaldi_init(int argc, char *argv[]){
         init.read_timeout = 3;
 
         init.produce_time = false;
-        init.IsRescore = false;
 
         po.Register("samp-freq", &init.samp_freq,
                 "Sampling frequency of the input signal (coded as 16-bit slinear).");
@@ -304,8 +293,6 @@ int kaldi_online_decoder::kaldi_init(int argc, char *argv[]){
                 "Number of seconds of timout for TCP audio data to appear on the stream. Use -1 for blocking.");
         po.Register("produce-time", &init.produce_time,
                 "Prepend begin/end times between endpoints (e.g. '5.46 6.81 <text_output>', in seconds)");
-        po.Register("IsRescore", &init.IsRescore,
-                "Prepend begin/end times between endpoints (e.g. '5.46 6.81 <text_output>', in seconds)");
 
         init.feature_opts->Register(&po);
         init.decodable_opts->Register(&po);
@@ -314,34 +301,16 @@ int kaldi_online_decoder::kaldi_init(int argc, char *argv[]){
 
         po.Read(argc, argv);
         if (po.NumArgs() !=4 ) {
-            if ( init.IsRescore == false ){
-                po.PrintUsage();
-                return -1;
-            }
-        }
-
-        if (init.IsRescore == true){
-            std::cout<<"LM rescoring is set"<<std::endl;
-            static std::string new_carpa_rxfilename = po.GetArg(4);
-            static std::string new_word_syms_filename = po.GetArg(5);
-
- //            //static ConstArpaLm const_arpa;
- //           init.const_arpa = new ConstArpaLM();
-            ReadKaldiObject(new_carpa_rxfilename, &const_arpa);
-
-            init.new_word_syms = NULL;
-            if (!new_word_syms_filename.empty())
-                if (!(init.new_word_syms = fst::SymbolTable::ReadText(new_word_syms_filename)))
-                    KALDI_ERR << "Could not read symbol table from file "
-                              << new_word_syms_filename;        
+            po.PrintUsage();
+            return -1;
         }
 
         static std::string nnet3_rxfilename = po.GetArg(1);
         static std::string fst_rxfilename = po.GetArg(2);
         static std::string word_syms_filename = po.GetArg(3);
-        std::cout<<"nnet3 rxfilename : "<<nnet3_rxfilename<<std::endl;
+        std:cout<<"nnet3 rxfilename : "<<nnet3_rxfilename<<std::endl;
 
-        init.feature_info = new OnlineNnet2FeaturePipelineInfo(*init.feature_opts); 
+            init.feature_info = new OnlineNnet2FeaturePipelineInfo(*init.feature_opts); 
         init.frame_shift = init.feature_info->FrameShiftInSeconds();
         init.frame_subsampling = init.decodable_opts->frame_subsampling_factor;
         std::cout<<"feature_info addr : "<<init.feature_info<<std::endl;

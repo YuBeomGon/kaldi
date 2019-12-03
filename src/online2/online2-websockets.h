@@ -17,13 +17,6 @@
 #include "util/kaldi-thread.h"
 #include "nnet3/nnet-utils.h"
 
-
-#include "base/kaldi-common.h"
-#include "lat/kaldi-lattice.h"
-#include "lat/lattice-functions.h"
-#include "lm/const-arpa-lm.h"
-#include "util/common-utils.h"
-
 /*The frame size is hardcoded for this sample code but it doesn't have to be*/
 #define FRAME_SIZE 960 //60ms
 //#define SAMPLE_RATE 48000
@@ -63,12 +56,7 @@ struct tag_kaldi_static_data {
     BaseFloat samp_freq;// = 16000.0;
     int read_timeout;// = 3;
     bool produce_time;// = false;
-
-    bool IsRescore;
-    //kaldi::ConstArpaLm* const_arpa;
-    fst::SymbolTable* new_word_syms;
 };
-extern kaldi::ConstArpaLm const_arpa;
 typedef tag_kaldi_static_data kaldi_static_data;
 
 struct tag_per_session_data {
@@ -164,8 +152,6 @@ int ws_service_callback(
         enum lws_callback_reasons reason, void *user,
         void *in, size_t len);
 
-
-kaldi::CompactLattice lat_rescore(kaldi::CompactLattice &clat );
 //extern const char* kaldi_decode(void* user, short* pcm_bytes, long long pcm_buff_size);
 
 
