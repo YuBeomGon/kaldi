@@ -73,7 +73,7 @@ for f in $required; do
   fi
 done
 
-utils/validate_data_dir.sh --no-text --no-feats $data || exit 1;
+#utils/validate_data_dir.sh --no-text --no-feats $data || exit 1;
 
 if [ -f $data/spk2warp ]; then
   echo "$0 [info]: using VTLN warp factors from $data/spk2warp"
@@ -90,7 +90,6 @@ for n in $(seq $nj); do
   # utils/create_data_link.pl for more info.
   utils/create_data_link.pl $mfccdir/raw_mfcc_$name.$n.ark
 done
-
 
 if $write_utt2num_frames; then
   write_num_frames_opt="--write-num-frames=ark,t:$logdir/utt2num_frames.JOB"

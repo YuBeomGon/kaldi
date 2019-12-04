@@ -51,26 +51,26 @@ if [ -f $data/images.scp ]; then
   exit $?
 fi
 
-for f in spk2utt utt2spk; do
-  if [ ! -f $data/$f ]; then
-    echo "$0: no such file $f"
-    exit 1;
-  fi
-  if [ ! -s $data/$f ]; then
-    echo "$0: empty file $f"
-    exit 1;
-  fi
-done
+# for f in spk2utt utt2spk; do
+#   if [ ! -f $data/$f ]; then
+#     echo "$0: no such file $f"
+#     exit 1;
+#   fi
+#   if [ ! -s $data/$f ]; then
+#     echo "$0: empty file $f"
+#     exit 1;
+#   fi
+# done
 
-! cat $data/utt2spk | awk '{if (NF != 2) exit(1); }' && \
-  echo "$0: $data/utt2spk has wrong format." && exit;
+# ! cat $data/utt2spk | awk '{if (NF != 2) exit(1); }' && \
+#   echo "$0: $data/utt2spk has wrong format." && exit;
 
-ns=$(wc -l < $data/spk2utt)
-if [ "$ns" == 1 ]; then
-  echo "$0: WARNING: you have only one speaker.  This probably a bad idea."
-  echo "   Search for the word 'bold' in http://kaldi-asr.org/doc/data_prep.html"
-  echo "   for more information."
-fi
+# ns=$(wc -l < $data/spk2utt)
+# if [ "$ns" == 1 ]; then
+#   echo "$0: WARNING: you have only one speaker.  This probably a bad idea."
+#   echo "   Search for the word 'bold' in http://kaldi-asr.org/doc/data_prep.html"
+#   echo "   for more information."
+# fi
 
 
 tmpdir=$(mktemp -d /tmp/kaldi.XXXX);
@@ -99,11 +99,11 @@ if ! $no_spk_sort; then
      echo "(fix this by making speaker-ids prefixes of utt-ids)" && exit 1;
 fi
 
-check_sorted_and_uniq $data/spk2utt
+# check_sorted_and_uniq $data/spk2utt
 
-! cmp -s <(cat $data/utt2spk | awk '{print $1, $2;}') \
-     <(utils/spk2utt_to_utt2spk.pl $data/spk2utt)  && \
-   echo "$0: spk2utt and utt2spk do not seem to match" && exit 1;
+# ! cmp -s <(cat $data/utt2spk | awk '{print $1, $2;}') \
+#      <(utils/spk2utt_to_utt2spk.pl $data/spk2utt)  && \
+#    echo "$0: spk2utt and utt2spk do not seem to match" && exit 1;
 
 cat $data/utt2spk | awk '{print $1;}' > $tmpdir/utts
 

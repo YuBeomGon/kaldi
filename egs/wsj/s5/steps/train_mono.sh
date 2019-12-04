@@ -17,6 +17,7 @@ max_iter_inc=30 # Last iter to increase #Gauss on.
 initial_beam=6 # beam used in the first iteration (set smaller to speed up initialization)
 regular_beam=10 # beam used after the first iteration
 retry_beam=40
+
 totgauss=1000 # Target #Gaussians.
 careful=false
 boost_silence=1.0 # Factor by which to boost silence likelihoods in alignment

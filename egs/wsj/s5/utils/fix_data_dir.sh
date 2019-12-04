@@ -173,6 +173,7 @@ function filter_utts {
   for x in feats.scp text segments utt2lang $maybe_wav $maybe_utt2dur $maybe_utt2num_frames; do
     if [ -f $data/$x ]; then
       utils/filter_scp.pl $data/$x $tmpdir/utts > $tmpdir/utts.tmp
+      cp $tmpdir/utts.tmp /home/beomgon2/utts.tmp
       mv $tmpdir/utts.tmp $tmpdir/utts
     fi
   done

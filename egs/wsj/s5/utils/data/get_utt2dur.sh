@@ -88,7 +88,7 @@ elif [ -f $data/wav.scp ]; then
       echo "... perturb_data_dir_speed_3way.sh."
     fi
 
-
+    read_entire_file=true
     num_utts=$(wc -l <$data/utt2spk)
     if [ $nj -gt $num_utts ]; then
       nj=$num_utts
