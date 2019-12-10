@@ -176,14 +176,14 @@ void kaldi_online_decoder::decoder_decode(std::vector<short int> &pcm){
             }
 
             KALDI_VLOG(1) << "Endpoint, sending message: " << msg;
-                        //server.WriteLn(msg);
+            //server.WriteLn(msg);
             if(istestmode == false){
                 char *str = (char*)msg.c_str();
                 websocket_write_back(wsi,(char*) str, -1);
             }
-//            else{
-//                str = msg;
-//            }
+            //            else{
+            //                str = msg;
+            //            }
 
             ////////////////////////////////////////////////
             sess->decoder->InitDecoding(sess->frame_offset);
@@ -220,7 +220,7 @@ void kaldi_online_decoder::decoder_close(){
         }
         else
             str = msg;
-        
+
         // server.WriteLn(msg);
     } else
     {
@@ -246,111 +246,109 @@ void kaldi_online_decoder::decoder_close(){
 //}
 
 int kaldi_online_decoder::kaldi_init(int argc, char *argv[]){
-    {
-        using namespace kaldi;
-        using namespace fst;
+    using namespace kaldi;
+    using namespace fst;
 
-        typedef kaldi::int32 int32;
-        typedef kaldi::int64 int64;
+    typedef kaldi::int32 int32;
+    typedef kaldi::int64 int64;
 
-        //static per_session_data psdata;
+    //static per_session_data psdata;
 
-        static const char *usage =
-            "Reads in audio from a network socket and performs online\n"
-            "decoding with neural nets (nnet3 setup), with iVector-based\n"
-            "speaker adaptation and endpointing.\n"
-            "Note: some configuration values and inputs are set via config\n"
-            "files whose filenames are passed as options\n"
-            "\n"
-            "Usage: online2-tcp-nnet3-decode-faster [options] <nnet3-in> "
-            "<fst-in> <word-symbol-table>\n";
+    static const char *usage =
+        "Reads in audio from a network socket and performs online\n"
+        "decoding with neural nets (nnet3 setup), with iVector-based\n"
+        "speaker adaptation and endpointing.\n"
+        "Note: some configuration values and inputs are set via config\n"
+        "files whose filenames are passed as options\n"
+        "\n"
+        "Usage: online2-tcp-nnet3-decode-faster [options] <nnet3-in> "
+        "<fst-in> <word-symbol-table>\n";
 
-        static ParseOptions po(usage);
+    static ParseOptions po(usage);
 
-        // feature_opts includes configuration for the iVector adaptation,
-        // as well as the basic features.
-        init.feature_opts = new OnlineNnet2FeaturePipelineConfig();
-        init.decodable_opts = new nnet3::NnetSimpleLoopedComputationOptions();
-        init.decoder_opts = new LatticeFasterDecoderConfig();
-        init.endpoint_opts = new OnlineEndpointConfig(); 
+    // feature_opts includes configuration for the iVector adaptation,
+    // as well as the basic features.
+    init.feature_opts = new OnlineNnet2FeaturePipelineConfig();
+    init.decodable_opts = new nnet3::NnetSimpleLoopedComputationOptions();
+    init.decoder_opts = new LatticeFasterDecoderConfig();
+    init.endpoint_opts = new OnlineEndpointConfig(); 
 
-        init.chunk_length_secs = 0.18;
-        init.output_period = 1;
-        init.samp_freq = 16000.0;
-        init.read_timeout = 3;
+    init.chunk_length_secs = 0.18;
+    init.output_period = 1;
+    init.samp_freq = 16000.0;
+    init.read_timeout = 3;
 
-        init.produce_time = false;
+    init.produce_time = false;
 
-        po.Register("samp-freq", &init.samp_freq,
-                "Sampling frequency of the input signal (coded as 16-bit slinear).");
-        po.Register("chunk-length", &init.chunk_length_secs,
-                "Length of chunk size in seconds, that we process.");
-        po.Register("output-period", &init.output_period,
-                "How often in seconds, do we check for changes in output.");
-        po.Register("num-threads-startup", &g_num_threads,
-                "Number of threads used when initializing iVector extractor.");
-        po.Register("read-timeout", &init.read_timeout,
-                "Number of seconds of timout for TCP audio data to appear on the stream. Use -1 for blocking.");
-        po.Register("produce-time", &init.produce_time,
-                "Prepend begin/end times between endpoints (e.g. '5.46 6.81 <text_output>', in seconds)");
+    po.Register("samp-freq", &init.samp_freq,
+            "Sampling frequency of the input signal (coded as 16-bit slinear).");
+    po.Register("chunk-length", &init.chunk_length_secs,
+            "Length of chunk size in seconds, that we process.");
+    po.Register("output-period", &init.output_period,
+            "How often in seconds, do we check for changes in output.");
+    po.Register("num-threads-startup", &g_num_threads,
+            "Number of threads used when initializing iVector extractor.");
+    po.Register("read-timeout", &init.read_timeout,
+            "Number of seconds of timout for TCP audio data to appear on the stream. Use -1 for blocking.");
+    po.Register("produce-time", &init.produce_time,
+            "Prepend begin/end times between endpoints (e.g. '5.46 6.81 <text_output>', in seconds)");
 
-        init.feature_opts->Register(&po);
-        init.decodable_opts->Register(&po);
-        init.decoder_opts->Register(&po);
-        init.endpoint_opts->Register(&po);
+    init.feature_opts->Register(&po);
+    init.decodable_opts->Register(&po);
+    init.decoder_opts->Register(&po);
+    init.endpoint_opts->Register(&po);
 
-        po.Read(argc, argv);
-        if (po.NumArgs() !=4 ) {
-            po.PrintUsage();
-            return -1;
-        }
-
-        static std::string nnet3_rxfilename = po.GetArg(1);
-        static std::string fst_rxfilename = po.GetArg(2);
-        static std::string word_syms_filename = po.GetArg(3);
-        std:cout<<"nnet3 rxfilename : "<<nnet3_rxfilename<<std::endl;
-
-            init.feature_info = new OnlineNnet2FeaturePipelineInfo(*init.feature_opts); 
-        init.frame_shift = init.feature_info->FrameShiftInSeconds();
-        init.frame_subsampling = init.decodable_opts->frame_subsampling_factor;
-        std::cout<<"feature_info addr : "<<init.feature_info<<std::endl;
-        std::cout<<"frame_shift :"<<init.frame_shift<<" frame_subsampling :"
-            <<init.frame_subsampling<<"\n";
-
-        KALDI_VLOG(1) << "Loading AM...";
-        init.trans_model = new TransitionModel();
-        static nnet3::AmNnetSimple am_nnet;
-        {
-            static bool binary;
-            static Input ki(nnet3_rxfilename, &binary);
-            init.trans_model->Read(ki.Stream(), binary);
-            am_nnet.Read(ki.Stream(), binary);
-            SetBatchnormTestMode(true, &(am_nnet.GetNnet()));
-            SetDropoutTestMode(true, &(am_nnet.GetNnet()));
-            nnet3::CollapseModel(nnet3::CollapseModelConfig(), &(am_nnet.GetNnet()));
-        }
-
-        // this object contains precomputed stuff that is used by all decodable
-        // objects.  It takes a pointer to am_nnet because if it has iVectors it has
-        // to modify the nnet to accept iVectors at intervals.
-        init.decodable_info = new nnet3::DecodableNnetSimpleLoopedInfo(*init.decodable_opts, &am_nnet);
-        //            nnet3::DecodableNnetSimpleLoopedInfo decodable_info(decodable_opts,
-        //                    &am_nnet);
-
-        KALDI_VLOG(1) << "Loading FST...";
-
-        init.decode_fst = ReadFstKaldiGeneric(fst_rxfilename);
-
-        init.word_syms = NULL;
-        if (!word_syms_filename.empty())
-            if (!(init.word_syms = fst::SymbolTable::ReadText(word_syms_filename)))
-                KALDI_ERR << "Could not read symbol table from file "
-                    << word_syms_filename;
-
-        return 1;
-
-        //            signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
+    po.Read(argc, argv);
+    if (po.NumArgs() !=4 ) {
+        po.PrintUsage();
+        return -1;
     }
+
+    static std::string nnet3_rxfilename = po.GetArg(1);
+    static std::string fst_rxfilename = po.GetArg(2);
+    static std::string word_syms_filename = po.GetArg(3);
+    std:cout<<"nnet3 rxfilename : "<<nnet3_rxfilename<<std::endl;
+
+    init.feature_info = new OnlineNnet2FeaturePipelineInfo(*init.feature_opts); 
+    init.frame_shift = init.feature_info->FrameShiftInSeconds();
+    init.frame_subsampling = init.decodable_opts->frame_subsampling_factor;
+    std::cout<<"feature_info addr : "<<init.feature_info<<std::endl;
+    std::cout<<"frame_shift :"<<init.frame_shift<<" frame_subsampling :"
+        <<init.frame_subsampling<<"\n";
+
+    KALDI_VLOG(1) << "Loading AM...";
+    init.trans_model = new TransitionModel();
+    static nnet3::AmNnetSimple am_nnet;
+    {
+        static bool binary;
+        static Input ki(nnet3_rxfilename, &binary);
+        init.trans_model->Read(ki.Stream(), binary);
+        am_nnet.Read(ki.Stream(), binary);
+        SetBatchnormTestMode(true, &(am_nnet.GetNnet()));
+        SetDropoutTestMode(true, &(am_nnet.GetNnet()));
+        nnet3::CollapseModel(nnet3::CollapseModelConfig(), &(am_nnet.GetNnet()));
+    }
+
+    // this object contains precomputed stuff that is used by all decodable
+    // objects.  It takes a pointer to am_nnet because if it has iVectors it has
+    // to modify the nnet to accept iVectors at intervals.
+    init.decodable_info = new nnet3::DecodableNnetSimpleLoopedInfo(*init.decodable_opts, &am_nnet);
+    //            nnet3::DecodableNnetSimpleLoopedInfo decodable_info(decodable_opts,
+    //                    &am_nnet);
+
+    KALDI_VLOG(1) << "Loading FST...";
+
+    init.decode_fst = ReadFstKaldiGeneric(fst_rxfilename);
+
+    init.word_syms = NULL;
+    if (!word_syms_filename.empty())
+        if (!(init.word_syms = fst::SymbolTable::ReadText(word_syms_filename)))
+            KALDI_ERR << "Could not read symbol table from file "
+                << word_syms_filename;
+
+
+    return 1;
+    //            signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 }
 
 

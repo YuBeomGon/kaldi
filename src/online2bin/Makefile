@@ -18,7 +18,7 @@ BINFILES = online2-wav-gmm-latgen-faster apply-cmvn-online \
      online2-wav-nnet2-am-compute  online2-wav-nnet2-latgen-threaded \
      online2-wav-nnet3-latgen-faster online2-wav-nnet3-latgen-grammar \
      online2-tcp-nnet3-decode-faster online2-web-nnet3-decode-faster \
-	 online2-web-nnet3-decode-testmode online2-web-testmode
+	 online2-web-testmode #online2-web-nnet3-decode-testmode 
 
 
 OBJFILES =
