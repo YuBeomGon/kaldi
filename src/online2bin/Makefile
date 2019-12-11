@@ -5,6 +5,11 @@ include ../kaldi.mk
 
 LDFLAGS += $(CUDA_LDFLAGS)
 LDLIBS += $(CUDA_LDLIBS)
+LDLIBS += -lwebsockets
+LDLIBS += -lopus
+LDLIBS += -lvorbis
+LDLIBS += -lvpx
+LDLIBS += -lm
 
 BINFILES = online2-wav-gmm-latgen-faster apply-cmvn-online \
      extend-wav-with-silence compress-uncompress-speex \
@@ -12,7 +17,9 @@ BINFILES = online2-wav-gmm-latgen-faster apply-cmvn-online \
      online2-wav-dump-features ivector-randomize \
      online2-wav-nnet2-am-compute  online2-wav-nnet2-latgen-threaded \
      online2-wav-nnet3-latgen-faster online2-wav-nnet3-latgen-grammar \
-     online2-tcp-nnet3-decode-faster
+     online2-tcp-nnet3-decode-faster online2-web-nnet3-decode-faster \
+	 online2-web-testmode #online2-web-nnet3-decode-testmode 
+
 
 OBJFILES =
 
@@ -24,5 +31,6 @@ ADDLIBS = ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a \
           ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a \
           ../feat/kaldi-feat.a ../transform/kaldi-transform.a \
           ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a \
-          ../matrix/kaldi-matrix.a ../base/kaldi-base.a 
+          ../matrix/kaldi-matrix.a ../base/kaldi-base.a \
+		  /usr/lib/x86_64-linux-gnu/libsimplewebm.a #/usr/lib/x86_64-linux-gnu/libwebsockets.a /usr/lib/x86_64-linux-gnu/libwebm.a  
 include ../makefiles/default_rules.mk

@@ -35,8 +35,8 @@ int main(int argc, char *argv[]) {
         "Takes two transcription files, in integer or text format,\n"
         "and outputs overall WER statistics to standard output.\n"
         "\n"
-        "Usage: compute-wer [options] <ref-rspecifier> <hyp-rspecifier>\n"
-        "E.g.: compute-wer --text --mode=present ark:data/train/text ark:hyp_text\n"
+        "Usage: compute-wer [options] <ref-rspecifier> <trans-rspecifier>\n"
+        "E.g.: compute-wer --text --mode=present ark:data/train/text ark:trans_text\n"
         "See also: align-text,\n"
         "Example scoring script: egs/wsj/s5/steps/score_kaldi.sh\n";
 
@@ -47,20 +47,24 @@ int main(int argc, char *argv[]) {
                 "Scoring mode: \"present\"|\"all\"|\"strict\":\n"
                 "  \"present\" means score those we have transcriptions for\n"
                 "  \"all\" means treat absent transcriptions as empty\n"
-                "  \"strict\" means die if all in ref not also in hyp");
+                "  \"strict\" means die if all in ref not also in trans");
     
     bool dummy = false;
     po.Register("text", &dummy, "Deprecated option! Keeping for compatibility reasons.");
 
     po.Read(argc, argv);
+      
+    std::cout<<"argc : "<<argc<<std::endl;
 
     if (po.NumArgs() != 2) {
       po.PrintUsage();
-      exit(1);
+      //exit(1);
     }
 
     std::string ref_rspecifier = po.GetArg(1);
-    std::string hyp_rspecifier = po.GetArg(2);
+    std::string trans_rspecifier = po.GetArg(2);
+    std::cout<<"ref : "<<ref_rspecifier<<std::endl;
+    std::cout<<"trans : "<<trans_rspecifier<<std::endl;
 
     if (mode != "strict" && mode != "present" && mode != "all") {
       KALDI_ERR << "--mode option invalid: expected \"present\"|\"all\"|\"strict\", got "
@@ -71,37 +75,39 @@ int main(int argc, char *argv[]) {
         num_ins = 0, num_del = 0, num_sub = 0, num_absent_sents = 0;
 
     // Both text and integers are loaded as vector of strings,
+    //SequentialTokenVectorReader ref_reader(ref_rspecifier);
+    SequentialTokenVectorReader trans_reader(trans_rspecifier);
     SequentialTokenVectorReader ref_reader(ref_rspecifier);
-    RandomAccessTokenVectorReader hyp_reader(hyp_rspecifier);
-    
+   
     // Main loop, accumulate WER stats,
-    for (; !ref_reader.Done(); ref_reader.Next()) {
+    for (; !ref_reader.Done() && !trans_reader.Done(); ref_reader.Next(), trans_reader.Next()) {
       std::string key = ref_reader.Key();
+      std::string tkey = trans_reader.Key();
+      std::cout<<"key : "<<key<<" "<<tkey<<std::endl;
       const std::vector<std::string> &ref_sent = ref_reader.Value();
-      std::vector<std::string> hyp_sent;
-      if (!hyp_reader.HasKey(key)) {
+      const std::vector<std::string> &trans_sent = trans_reader.Value();
+      //std::cout<<"ref_sent"<<ref_sent<<std::endl;
+      //std::vector<std::string> trans_sent;
+      //std::cout<<"trans_sent"<<trans_sent<<std::endl;
+      if (key != tkey) {
         if (mode == "strict")
-          KALDI_ERR << "No hypothesis for key " << key << " and strict "
+          KALDI_ERR << "No transothesis for key " << key << " and strict "
               "mode specifier.";
         num_absent_sents++;
         if (mode == "present")  // do not score this one.
           continue;
       } else {
-        hyp_sent = hyp_reader.Value(key);
+        //trans_sent = trans_reader.Value(key);
       }
       num_words += ref_sent.size();
       int32 ins, del, sub;
-      word_errs += LevenshteinEditDistance(ref_sent, hyp_sent, &ins, &del, &sub);
+      word_errs += LevenshteinEditDistance(ref_sent, trans_sent, &ins, &del, &sub);
       num_ins += ins;
       num_del += del;
       num_sub += sub;
 
       num_sent++;
-      sent_errs += (ref_sent != hyp_sent);
-
-      if(ref_sent != hyp_sent){
-        std::cout<<"Sentence not same for Key :" <<key<<std::endl;
-      }                                                                                                         
+      sent_errs += (ref_sent != trans_sent);
     }
 
     // Compute WER, SER,
@@ -120,7 +126,7 @@ int main(int argc, char *argv[]) {
     std::cout << "%SER " << std::fixed << percent_ser <<  " [ "
                << sent_errs << " / " << num_sent << " ]\n";
     std::cout << "Scored " << num_sent << " sentences, "
-              << num_absent_sents << " not present in hyp.\n";
+              << num_absent_sents << " not present in trans.\n";
 
     return 0;
   } catch(const std::exception &e) {
