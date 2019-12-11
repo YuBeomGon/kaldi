@@ -179,7 +179,7 @@ def generate_acc_logprob_plots(exp_dir, output_dir, plot, key='accuracy',
                                "accuracy/log-probability plot, not generating it")
                 return
             data = data[data[:, 0] >= start_iter, :]
-            plot_handle, = plt.plot(data[:, 0], data[:, 1], color=color_val,
+            plot_handle, = plt.plot(data[:, 0], data[:, 1], color='b',
                                     linestyle="--",
                                     label="train {0}".format(dir))
             plots.append(plot_handle)
