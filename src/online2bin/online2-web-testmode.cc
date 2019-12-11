@@ -32,6 +32,11 @@
 #include <fstream>
 //#include <sstream>
 #include <vector>
+#include "base/kaldi-common.h"
+#include "util/common-utils.h"
+#include "tree/context-dep.h"
+#include "util/edit-distance.h"
+#include "util/parse-options.h"
 //#include <istream>
 
 class kaldi_testmode_online_decoder : public kaldi_online_decoder{
@@ -41,103 +46,90 @@ class kaldi_testmode_online_decoder : public kaldi_online_decoder{
         };
         ~kaldi_testmode_online_decoder(){};
 
-        int file_num;
-        std::vector<std::string> user_list;
-        std::vector<std::string> addr_list;
-        //std::vector<std::string> trans_list;
-        std::vector<std::string> decoded_list;
-
-        int read_files();      
-
     private:
         //per_session_data * sess;
     protected:
 };
 
 //typedef kaldi_testmode_online_decoder kaldi;
-void read_file(std::ifstream &file, std::vector<std::string> &list)
-{
 
-    const int file_buff_size = 300;//transcription text sentence size
-    if(!file.is_open()){
-        std::cout<<"file stream open error\n";
-        return ;
-    }
-    while(!file.eof()){
-        char buf[file_buff_size];
-        file.getline(buf, file_buff_size);
-//        std::cout<<buf<<std::endl;
-        list.push_back(buf);
-    } 
-}
-
-//int read_files(std::vector<std::string> &user_list, std::vector<std::string> &addr_list){
-int kaldi_testmode_online_decoder::read_files(){
-    //std::vector<std::string> file;
-    std::ifstream user("/home/beomgon/data/test/user.list");
-    read_file(user, user_list);
-
-    std::ifstream addr("/home/beomgon/data/test/addr.list");
-    read_file(addr, addr_list);
-
-    return user_list.size() -1;
-}
 
 int main(int argc, char * argv[]){
+    
+//    const char *usage =
+//        "Compute WER by comparing different transcriptions\n"
+//        "Takes two transcription files, in integer or text format,\n"
+//        "and outputs overall WER statistics to standard output.\n"
+//        "\n"
+//        "Usage: compute-wer [options] <ref-rspecifier> <hyp-rspecifier>\n"
+//        "E.g.: compute-wer --text --mode=present ark:data/train/text ark:hyp_text\n"
+//        "See also: align-text,\n"
+//        "Example scoring script: egs/wsj/s5/steps/score_kaldi.sh\n";
+//
+//    kaldi::ParseOptions po(usage);
+//
+//    std::string mode = "strict";
+//    po.Register("mode", &mode,
+//                "Scoring mode: \"present\"|\"all\"|\"strict\":\n"
+//                "  \"present\" means score those we have transcriptions for\n"
+//                "  \"all\" means treat absent transcriptions as empty\n"
+//                "  \"strict\" means die if all in ref not also in hyp");
+//    
+//    bool dummy = false;
+//    po.Register("text", &dummy, "Deprecated option! Keeping for compatibility reasons.");
+//
+//    po.Read(argc, argv);
 
     int numargc;
+    kaldi_testmode_online_decoder::istestmode = true;
     numargc = kaldi_testmode_online_decoder::kaldi_init(argc, argv);
     std::cout<<"numargc : "<<numargc<<std::endl;
-
     if(numargc == -1)
         return -1;
     
     kaldi_testmode_online_decoder ktd;
 
-    ktd.istestmode = true;
+    std::string wav_rspecifier = argv[argc -2];
+    std::string decode_wspecifier = argv[argc - 1];
+    std::cout<<"wav :"<<wav_rspecifier<<" decode : "<<decode_wspecifier<<std::endl;
+    kaldi::SequentialTokenVectorReader ref_reader(wav_rspecifier);
+    std::ofstream ofile (decode_wspecifier);
+    std::string str;
+    std::vector<short int> pcm16_buff;
 
-    int sentence_num = 0;
-    int num = 0;
-    
-    //check the audio(sentence) file numbers //file num would be from bash
-    sentence_num = ktd.read_files( );
-    std::cout<<"Num Users : " <<ktd.user_list.size()<<std::endl;
-    std::cout<<"Num file addrs : " <<ktd.addr_list.size()<<std::endl;
-    ktd.file_num = ktd.addr_list.size();
-    std::ofstream ofile ("/home/beomgon/data/test/decoded.txt");
+    for (; !ref_reader.Done(); ref_reader.Next()){
+        std::string key = ref_reader.Key();
+        const std::vector<std::string> &ref_sent = ref_reader.Value();
+        //std::string address = ref_reader.Value();
+        std::string address = ref_sent[0];
 
-    //long long buff_size = read_ 
-    while(num<ktd.addr_list.size()){
-        std::string user = ktd.user_list[num];
-        std::cout<<"user : "<<user<<std::endl;
-        std::string addr = ktd.addr_list[num];
-        std::cout<<"addr : "<<addr<<std::endl;
-        std::ifstream file(addr, std::ios::in|std::ios::binary);
-        std::vector<short int> pcm16_buff;
+        std::cout<<"address : "<<address<<std::endl;
+        std::ifstream wav(address, std::ios::in|std::ios::binary);
+
         pcm16_buff.clear();
-        std::string str;
         str.clear();
-       
+
         ktd.decoder_sess_create();
         ktd.decoder_init();
         ktd.sampling = 16000;
 
-        if(!file.is_open()){
-            std::cout<<"file stream open error\n";
+        if(!wav.is_open()){
+            std::cout<<"wav stream open error\n";
             return 0;
         }
             
-        file.seekg(0, std::ios::end);
-        int size = file.tellg();
+        wav.seekg(0, std::ios::end);
+        int size = wav.tellg();
 
         pcm16_buff.resize(size);
         ktd.pcm_buff_size = size;
-        file.seekg(0, std::ios::beg);
-        file.read((char*)&pcm16_buff[0], size*sizeof(short ));
+        wav.seekg(0, std::ios::beg);
+        wav.read((char*)&pcm16_buff[0], size*sizeof(short ));
         
         ktd.decoder_decode(pcm16_buff);
-        std::cout<<"file size : "<<size<<std::endl;
-        file.clear();
+        std::cout<<"wav size : "<<size<<std::endl;
+        wav.clear();
+        wav.close();
         std::string msg = ktd.get_str();
         //std::cout<<"msg : "<<msg<<std::endl;
         //ktd.decoded_list.push_back(msg);
@@ -146,15 +138,13 @@ int main(int argc, char * argv[]){
         str = ktd.get_str();
         std::cout<<"decoded text : "<<str<<std::endl;
         if(ofile.is_open()){
-            ofile<<user<<" ";
+            ofile<<key<<" ";
             ofile<<str<<std::endl;
         }
         ktd.decoder_sess_free();
 
-        num++;
-//        if(num>20)
-//            break;
     }
+
     ofile.close();
 
     return 1;

@@ -98,6 +98,10 @@ int main(int argc, char *argv[]) {
 
       num_sent++;
       sent_errs += (ref_sent != hyp_sent);
+
+      if(ref_sent != hyp_sent){
+        std::cout<<"Sentence not same for Key :" <<key<<std::endl;
+      }                                                                                                         
     }
 
     // Compute WER, SER,

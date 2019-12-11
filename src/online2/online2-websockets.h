@@ -97,6 +97,7 @@ class kaldi_online_decoder{
        
     public:
         static kaldi_static_data init;
+        static bool istestmode;
         long long pcm_buff_size;
         const int time_duration;// 12sec
         const BaseFloat kaldi_frame_size; //60ms
@@ -104,10 +105,9 @@ class kaldi_online_decoder{
         struct lws* wsi;
         short int* pcm_bytes;
         char* base64_dbuff;
-        bool istestmode;
 
         kaldi_online_decoder( ):sampling(48000),pcm_buff_size(0),/*wsi(NULL),sess(NULL),str(NULL),*/
-                                time_duration(12),kaldi_frame_size(0.06),istestmode(false)
+                                time_duration(12),kaldi_frame_size(0.06)
 
         {
             //pcm_buff_size(sampling*kaldi_frame_size*time_duration);

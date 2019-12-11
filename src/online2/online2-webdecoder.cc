@@ -29,6 +29,7 @@
 #include "online2/online2-websockets.h"
 
 kaldi_static_data kaldi_online_decoder::init = {NULL,};
+bool kaldi_online_decoder::istestmode = false;
 
 namespace kaldi {
 
@@ -299,7 +300,7 @@ int kaldi_online_decoder::kaldi_init(int argc, char *argv[]){
     init.endpoint_opts->Register(&po);
 
     po.Read(argc, argv);
-    if (po.NumArgs() !=4 ) {
+    if (po.NumArgs() !=4 && istestmode == false ) {
         po.PrintUsage();
         return -1;
     }
