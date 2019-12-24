@@ -156,3 +156,16 @@ GSYMS
 # They are added here to avoid accidently checkin.
 /src/**/CMakeLists.txt
 /build*
+
+
+cscope.files
+cscope.out
+cscope_maps.vim
+egs/Ai_hub/
+egs/backup/
+egs/korean/
+egs/korean_dnn/
+egs/voxforge/s5/voxforge/
+egs/zeroth/
+egs/zeroth_lm/
+tools/morfessor/        

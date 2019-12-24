@@ -129,9 +129,9 @@ void kaldi_online_decoder::decoder_init(){
 void kaldi_online_decoder::decoder_decode(std::vector<short int> &pcm){
     per_session_data* sess = get_sess();
     //const int max_frame_size = (int)pcm_buff_size/(2*sampling/SAMPLE_RATE); //buff/2 means 8bit -> 16 bit
+//    int denom = (sampling/SAMPLE_RATE);
+//    std::cout<<"denom : "<<denom<<std::endl;
     const int max_frame_size = (int)pcm_buff_size/(sampling/SAMPLE_RATE); //buff/2 means 8bit -> 16 bit
-    int denom = (sampling/SAMPLE_RATE);
-    std::cout<<"denom : "<<denom<<std::endl;
     BaseFloat out[max_frame_size] = {0,};
 
     //downsampling by 3 if sampling rate is 48khz

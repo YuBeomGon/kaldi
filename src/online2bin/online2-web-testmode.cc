@@ -52,34 +52,17 @@ class kaldi_testmode_online_decoder : public kaldi_online_decoder{
 };
 
 //typedef kaldi_testmode_online_decoder kaldi;
-
+std::string replaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
 
 int main(int argc, char * argv[]){
     
-//    const char *usage =
-//        "Compute WER by comparing different transcriptions\n"
-//        "Takes two transcription files, in integer or text format,\n"
-//        "and outputs overall WER statistics to standard output.\n"
-//        "\n"
-//        "Usage: compute-wer [options] <ref-rspecifier> <hyp-rspecifier>\n"
-//        "E.g.: compute-wer --text --mode=present ark:data/train/text ark:hyp_text\n"
-//        "See also: align-text,\n"
-//        "Example scoring script: egs/wsj/s5/steps/score_kaldi.sh\n";
-//
-//    kaldi::ParseOptions po(usage);
-//
-//    std::string mode = "strict";
-//    po.Register("mode", &mode,
-//                "Scoring mode: \"present\"|\"all\"|\"strict\":\n"
-//                "  \"present\" means score those we have transcriptions for\n"
-//                "  \"all\" means treat absent transcriptions as empty\n"
-//                "  \"strict\" means die if all in ref not also in hyp");
-//    
-//    bool dummy = false;
-//    po.Register("text", &dummy, "Deprecated option! Keeping for compatibility reasons.");
-//
-//    po.Read(argc, argv);
-
     int numargc;
     kaldi_testmode_online_decoder::istestmode = true;
     numargc = kaldi_testmode_online_decoder::kaldi_init(argc, argv);
@@ -87,13 +70,15 @@ int main(int argc, char * argv[]){
     if(numargc == -1)
         return -1;
     
-    kaldi_testmode_online_decoder ktd;
-
     std::string wav_rspecifier = argv[argc -2];
     std::string decode_wspecifier = argv[argc - 1];
     std::cout<<"wav :"<<wav_rspecifier<<" decode : "<<decode_wspecifier<<std::endl;
     kaldi::SequentialTokenVectorReader ref_reader(wav_rspecifier);
+
     std::ofstream ofile (decode_wspecifier);
+    kaldi_testmode_online_decoder ktd;
+    ktd.sampling = 16000;
+
     std::string str;
     std::vector<short int> pcm16_buff;
 
@@ -103,51 +88,61 @@ int main(int argc, char * argv[]){
         //std::string address = ref_reader.Value();
         std::string address = ref_sent[0];
 
-        std::cout<<"address : "<<address<<std::endl;
-        std::ifstream wav(address, std::ios::in|std::ios::binary);
-
+        ktd.decoder_sess_create();
+        ktd.decoder_init();
         pcm16_buff.clear();
         str.clear();
 
-        ktd.decoder_sess_create();
-        ktd.decoder_init();
-        ktd.sampling = 16000;
-
-        if(!wav.is_open()){
-            std::cout<<"wav stream open error\n";
-            return 0;
-        }
+        std::cout<<"address : "<<address<<std::endl;
             
-        wav.seekg(0, std::ios::end);
-        int size = wav.tellg();
+        {
+            std::ifstream wav(address, std::ios::in|std::ios::binary);
 
-        pcm16_buff.resize(size);
-        ktd.pcm_buff_size = size;
-        wav.seekg(0, std::ios::beg);
-        wav.read((char*)&pcm16_buff[0], size*sizeof(short ));
-        
-        ktd.decoder_decode(pcm16_buff);
-        std::cout<<"wav size : "<<size<<std::endl;
-        wav.clear();
-        wav.close();
-        std::string msg = ktd.get_str();
-        //std::cout<<"msg : "<<msg<<std::endl;
-        //ktd.decoded_list.push_back(msg);
+            if(!wav.is_open()){
+                std::cout<<"wav stream open error\n";
+                return 0;
+            }
+            wav.seekg(0, std::ios::end);
+            int size = wav.tellg();
+
+            pcm16_buff.resize(size);
+            ktd.pcm_buff_size = size;
+            wav.seekg(0, std::ios::beg);
+            wav.read((char*)&pcm16_buff[0], size*sizeof(short ));
+            std::cout<<"wav size : "<<size<<std::endl;
+
+            ktd.decoder_decode(pcm16_buff);
+            //ktd.decoder_init();
+
+            wav.clear();
+            wav.close();
+        }
 
         ktd.decoder_close();
+        ktd.decoder_sess_free();
         str = ktd.get_str();
         std::cout<<"decoded text : "<<str<<std::endl;
+
+//        str = replaceAll(str, std::string("번"), std::string(""));
+        str = replaceAll(str, std::string("지아이"), std::string("GI"));
+        str = replaceAll(str, std::string("에스비에스"), std::string("SBS"));
+        str = replaceAll(str, std::string("에이피에프"), std::string("APF"));
+        str = replaceAll(str, std::string("씨티"), std::string("CT"));
+        str = replaceAll(str, std::string("이피티"), std::string("EPT"));
+        str = replaceAll(str, std::string("씨알"), std::string("CR"));
+        str = replaceAll(str, std::string("에프유"), std::string("FU"));
+        std::cout<<"decoded text : " << str <<std::endl;
+//        str.replace(str.find("번"), , " ");
+//        std::replace(str.begin(), str.end(), '번', ' ');
         if(ofile.is_open()){
             ofile<<key<<" ";
             ofile<<str<<std::endl;
         }
-        ktd.decoder_sess_free();
 
     }
 
     ofile.close();
 
     return 1;
-    //transcript와 decoded transcript를 비교하는 코드  or bash부분으로 넘길수도 있다.
 }
 
